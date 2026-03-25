@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Centralized API configuration using Axios
 const API = axios.create({
-  baseURL: "https://socialapp-k7hu.onrender.com/api"
+  baseURL: "https://socialapp-k7hu.onrender.com/api" 
 });
 
 // Request Interceptor: Injects Bearer token automatically if it exists in local storage

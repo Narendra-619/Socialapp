@@ -31,15 +31,17 @@ export default function Login() {
           
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          <TextField fullWidth label="Email" margin="normal" variant="outlined"
-            value={email} onChange={(e) => setEmail(e.target.value)} />
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <TextField fullWidth label="Email" type="email" margin="normal" variant="outlined" required
+              value={email} onChange={(e) => setEmail(e.target.value)} />
 
-          <TextField fullWidth label="Password" type="password" margin="normal" variant="outlined"
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+            <TextField fullWidth label="Password" type="password" margin="normal" variant="outlined" required
+              value={password} onChange={(e) => setPassword(e.target.value)} />
 
-          <Button fullWidth variant="contained" size="large" onClick={handleLogin} sx={{ mt: 2, mb: 2, borderRadius: 2 }}>
-            Login
-          </Button>
+            <Button fullWidth variant="contained" size="large" sx={{ mt: 2, mb: 2, borderRadius: 2 }} type="submit">
+              Login
+            </Button>
+          </form>
 
           <Typography variant="body2" textAlign="center">
             Don't have an account? <Button color="primary" onClick={() => navigate("/register")}>Sign Up</Button>

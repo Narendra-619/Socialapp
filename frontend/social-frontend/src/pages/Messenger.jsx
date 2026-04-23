@@ -18,7 +18,8 @@ export default function Messenger() {
   const scrollRef = useRef();
 
   useEffect(() => {
-    socket.current = io("http://localhost:3000");
+    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    socket.current = io(socketUrl);
     socket.current.on("getMessage", (data) => {
       setArrivalMessage({
         sender: data.senderId,

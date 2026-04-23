@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Centralized API configuration using Axios
 const API = axios.create({
-  baseURL: "http://localhost:3000/api" 
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "http://localhost:3000/api" 
 });
 
 // Request Interceptor: Injects Bearer token automatically if it exists in local storage

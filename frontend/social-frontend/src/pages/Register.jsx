@@ -14,6 +14,13 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    // Client-side validation
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
     setLoading(true);
     try {
       setError("");
@@ -56,7 +63,7 @@ export default function Register() {
                 type="text"
                 required
                 className="input-field"
-                placeholder="Choose a username"
+                placeholder="johndoe"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -79,6 +86,7 @@ export default function Register() {
               <input
                 type="password"
                 required
+                minLength={8}
                 className="input-field"
                 placeholder="Min. 8 characters"
                 value={password}

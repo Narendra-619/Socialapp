@@ -19,13 +19,13 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      {/* Premium Overlay with soft blue tint and deep blur */}
+      {/* Premium Overlay */}
       <div 
         className="fixed inset-0 bg-blue-600/10 dark:bg-blue-600/5 backdrop-blur-2xl transition-opacity duration-1000 animate-fade-in"
         onClick={onClose}
       ></div>
       
-      {/* Welcome Modal Content - Glassmorphism style */}
+      {/* Welcome Modal Content */}
       <div className="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/50 dark:border-zinc-800/50 w-full max-w-[500px] rounded-[48px] shadow-[0_40px_100px_-20px_rgba(37,99,235,0.3)] overflow-hidden transform transition-all animate-welcome-pop">
         
         {/* Animated background decorative elements */}
@@ -44,10 +44,10 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
           </h3>
           
           <div className="space-y-6 text-zinc-600 dark:text-zinc-400 text-lg font-medium leading-relaxed max-w-[360px] mx-auto">
-            <p className="animate-slide-up opacity-0 [animation-fill-mode:forwards] [animation-delay:400ms]">
+            <p className="stagger-1">
               Your space to connect, share moments, chat with friends, and express yourself.
             </p>
-            <div className="bg-zinc-50/80 dark:bg-zinc-800/40 p-5 rounded-[24px] border border-zinc-100/50 dark:border-zinc-700/30 animate-slide-up opacity-0 [animation-fill-mode:forwards] [animation-delay:600ms]">
+            <div className="bg-zinc-50/80 dark:bg-zinc-800/40 p-5 rounded-[24px] border border-zinc-100/50 dark:border-zinc-700/30 stagger-2">
               <p className="text-sm font-bold tracking-wide text-blue-600 dark:text-blue-400">
                 Start posting, reacting, and building your network today!
               </p>
@@ -55,7 +55,7 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
           </div>
         </div>
 
-        <div className="p-12 pt-4 relative z-10 animate-slide-up opacity-0 [animation-fill-mode:forwards] [animation-delay:800ms]">
+        <div className="p-12 pt-4 relative z-10 stagger-3">
            <button
             onClick={onClose}
             className="w-full py-5 rounded-[24px] text-xl font-black bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:scale-[1.03] active:scale-[0.97] transition-all duration-500 shadow-2xl shadow-zinc-900/30 dark:shadow-white/10 group overflow-hidden relative"
@@ -87,14 +87,19 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
           50% { opacity: 0.8; transform: scale(1.1); }
         }
         .animate-welcome-pop {
-          animation: welcomePop 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: welcomePop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
-        .animate-slide-up {
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        .stagger-1, .stagger-2, .stagger-3 {
+          opacity: 0;
+          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        .stagger-1 { animation-delay: 0.4s; }
+        .stagger-2 { animation-delay: 0.6s; }
+        .stagger-3 { animation-delay: 0.8s; }
+
         .animate-pulse-slow {
           animation: pulseSlow 5s ease-in-out infinite;
         }

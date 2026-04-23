@@ -13,18 +13,37 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: "social_app",
-    allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"],
-    transformation: [{ width: 1200, crop: "limit" }] // Still optimization to save space/bandwidth
+  params: async (req, file) => {
+    // Determine the format based on the mimetype
+    let format = "jpg"; // default
+    if (file.mimetype === "image/gif") format = "gif";
+    if (file.mimetype === "image/png") format = "png";
+    if (file.mimetype === "image/webp") format = "webp";
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/jpg") format = "jpg";
+
+    return {
+      folder: "social_app",
+      format: format,
+      // For GIFs, we use a different transformation to preserve animation
+      transformation: format === "gif" 
+        ? [{ width: 800, crop: "limit", fetch_format: "auto", quality: "auto" }]
+        : [{ width: 1200, crop: "limit", fetch_format: "auto", quality: "auto" }],
+    };
   },
 });
 
 const fileFilter = (req, file, cb) => {
+  // Log file info for debugging
+  console.log("Uploading file:", {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size
+  });
+
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only images are allowed."), false);
+    cb(new Error("Invalid file type. Only images (JPG, PNG, GIF, WebP) are allowed."), false);
   }
 };
 
@@ -40,8 +59,7 @@ const extractPublicId = (url) => {
   try {
     const splitUrl = url.split("/");
     const lastSegment = splitUrl[splitUrl.length - 1];
-    const publicIdWithExtension = lastSegment;
-    const publicId = publicIdWithExtension.split(".")[0];
+    const publicId = lastSegment.split(".")[0];
     return `social_app/${publicId}`;
   } catch (error) {
     return null;

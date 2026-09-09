@@ -881,9 +881,9 @@ const Profile = () => {
           )}
         </div>
 
-        <div className="px-5 sm:px-8 pb-6 sm:pb-8 relative">
+        <div className="px-4 sm:px-8 pb-6 sm:pb-8 relative">
           <div className="flex justify-between items-end -mt-10 sm:-mt-14 mb-4 sm:mb-6">
-            <div className="relative group">
+            <div className="relative group shrink-0">
               <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white dark:bg-zinc-950 overflow-hidden shadow-lg transition-all group-hover:shadow-xl">
                 {profile.profilePicture ? (
                   <img src={profile.profilePicture} alt={profile.username} className="w-full h-full object-cover" />
@@ -894,32 +894,32 @@ const Profile = () => {
                 )}
               </div>
               {profile.isPrivate && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-zinc-900 dark:bg-white rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
-                  <svg className="w-4 h-4 text-white dark:text-zinc-900" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-zinc-900 dark:bg-white rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-zinc-900" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 translate-y-2 sm:translate-y-0">
+            <div className="flex items-center gap-1.5 sm:gap-3 mb-1 sm:mb-2 translate-y-1 sm:translate-y-0 shrink-0">
               {isOwnProfile ? (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="p-2.5 sm:px-5 sm:py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-medium text-sm rounded-xl transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-[0.97] flex items-center justify-center gap-2 shadow-sm"
+                  className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-medium text-xs sm:text-sm rounded-xl transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-[0.97] flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm shrink-0"
                   title="Edit Profile"
                   aria-label="Edit Profile"
                 >
-                  <svg className="w-4 h-4 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                  <span className="hidden sm:inline">Edit Profile</span>
+                  <span className="inline">Edit Profile</span>
                 </button>
               ) : (
                 <>
                   <button
                     onClick={handleFollow}
                     disabled={followLoading}
-                    className={`px-6 py-2 font-medium text-sm rounded-xl transition-all active:scale-[0.97] ${
+                    className={`px-3.5 sm:px-6 py-1.5 sm:py-2 font-medium text-xs sm:text-sm rounded-xl transition-all active:scale-[0.97] shrink-0 ${
                       isFollowing
                         ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:text-red-500 dark:hover:text-red-400"
                         : pendingRequest
@@ -934,7 +934,7 @@ const Profile = () => {
                   <Link
                     to="/messenger"
                     state={{ startChatWith: profile }}
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition-all active:scale-[0.97]"
+                    className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm rounded-xl transition-all active:scale-[0.97] shrink-0 text-center"
                   >
                     Message
                   </Link>

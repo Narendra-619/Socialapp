@@ -30,9 +30,19 @@ export const protect = async (req, res, next) => {
     // Fetch user from DB excluding password field and attach to request object
     req.user = await User.findById(decoded.id).select("-password");
 
+    if (!req.user) {
+      return res.status(401).json({ error: "User account no longer exists" });
+    }
+
     next();
 
   } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Session expired. Please log in again." });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Session invalid. Please log in again." });
+    }
     res.status(401).json({
       error: "Not authorized, token failed"
     });

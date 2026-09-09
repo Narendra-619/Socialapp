@@ -25,13 +25,49 @@ const postSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
+  video: {
+    type: String,
+    default: ""
+  },
+  allowDownload: {
+    type: Boolean,
+    default: true
+  },
+  mentions: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  views: {
+    type: Number,
+    default: 0
+  },
+  viewedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
   likes: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     }
   ],
-  comments: [commentSchema]
+  comments: [commentSchema],
+  status: {
+    type: String,
+    enum: ["draft", "scheduled", "published"],
+    default: "published"
+  },
+  scheduledAt: {
+    type: Date,
+    default: null
+  }
 }, { timestamps: true });
+
+postSchema.index({ status: 1, scheduledAt: 1 });
+postSchema.index({ userId: 1 });
 
 export default mongoose.model("Post", postSchema);

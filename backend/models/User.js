@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    lowercase: true  // M11: enforce case-insensitive uniqueness (John === john)
   },
   email: {
     type: String,
@@ -18,6 +19,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
+  coverImage: {
+    type: String,
+    default: ""
+  },
   bio: {
     type: String,
     default: ""
@@ -25,6 +30,32 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
+  },
+  followers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
+  savedPosts: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post"
+    }
+  ],
+  isVerified: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

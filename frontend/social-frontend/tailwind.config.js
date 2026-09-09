@@ -6,7 +6,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      padding: {
+        safe: "env(safe-area-inset-bottom, 0px)",
+      },
+    },
   },
   plugins: [],
 }

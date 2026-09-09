@@ -14,7 +14,7 @@ export default function PostPage() {
       try {
         const res = await API.get(`/posts/${postId}`);
         setPost(res.data);
-      } catch (err) {
+      } catch {
         console.error("Failed to load post");
       } finally {
         setLoading(false);

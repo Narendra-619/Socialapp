@@ -1,10 +1,14 @@
 import mongoose from "mongoose";
 
 const conversationSchema = new mongoose.Schema({
-  participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  }],
+  participants: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    }],
+    validate: [v => Array.isArray(v) && v.length >= 2, "Conversation requires at least two participants"]
+  },
   lastMessage: {
     text: String,
     sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -15,6 +19,8 @@ const conversationSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+conversationSchema.index({ participants: 1 });
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 export default Conversation;

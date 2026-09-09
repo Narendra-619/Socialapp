@@ -1,13 +1,24 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (!savedUser) return null;
+      const parsed = JSON.parse(savedUser);
+      return {
+        ...parsed,
+        _id: parsed._id || parsed.id,
+        id: parsed.id || parsed._id
+      };
+    } catch {
+      return null;
+    }
   });
   const [showWelcome, setShowWelcome] = useState(false);
   const navigate = useNavigate();
@@ -22,46 +33,69 @@ export const AuthProvider = ({ children }) => {
   }, [token, navigate]);
 
   /**
-   * Handle user login: stores token and navigates to the feed
+   * Handle user login: stores token and updates state (useEffect redirects to /feed)
    */
-  const loginAuth = (newToken, userData, isNew = false) => {
+  const loginAuth = useCallback((newToken, userData, isNew = false) => {
+    const normalized = userData ? {
+      ...userData,
+      _id: userData._id || userData.id,
+      id: userData.id || userData._id
+    } : null;
     localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userData));
+    if (normalized) {
+      localStorage.setItem("user", JSON.stringify(normalized));
+    }
     setToken(newToken);
-    setUser(userData);
+    setUser(normalized);
     if (isNew) {
       setShowWelcome(true);
     }
-    navigate("/feed");
-  };
+  }, []);
 
   /**
    * Close the welcome modal
    */
-  const closeWelcome = () => setShowWelcome(false);
+  const closeWelcome = useCallback(() => setShowWelcome(false), []);
 
   /**
    * Handle user logout: clears authorization state and redirects
    */
-  const logoutAuth = () => {
+  const logoutAuth = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
     navigate("/");
-  };
+  }, [navigate]);
 
   /**
    * Update user details locally and in storage
    */
-  const updateUser = (updatedData) => {
-    const newUser = { ...user, ...updatedData };
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setUser(newUser);
-  };
+  const updateUser = useCallback((updatedData) => {
+    setUser((prevUser) => {
+      const newUser = {
+        ...prevUser,
+        ...updatedData,
+        _id: updatedData._id || updatedData.id || prevUser?._id || prevUser?.id,
+        id: updatedData.id || updatedData._id || prevUser?.id || prevUser?._id,
+      };
+      localStorage.setItem("user", JSON.stringify(newUser));
+      return newUser;
+    });
+  }, []);
+
+  const value = useMemo(() => ({
+    token,
+    user,
+    loginAuth,
+    logoutAuth,
+    updateUser,
+    showWelcome,
+    closeWelcome
+  }), [token, user, showWelcome, loginAuth, logoutAuth, updateUser, closeWelcome]);
 
   return (
-    <AuthContext.Provider value={{ token, user, loginAuth, logoutAuth, updateUser, showWelcome, closeWelcome }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

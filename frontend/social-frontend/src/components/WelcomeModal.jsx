@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import { lockScroll, unlockScroll } from "../utils/scrollLock";
 
 const WelcomeModal = ({ isOpen, onClose, username }) => {
   useEffect(() => {
@@ -7,11 +8,11 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
     };
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
+      lockScroll();
     }
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
+      if (isOpen) unlockScroll();
     };
   }, [isOpen, onClose]);
 
@@ -68,42 +69,6 @@ const WelcomeModal = ({ isOpen, onClose, username }) => {
           </button>
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes welcomePop {
-          0% { opacity: 0; transform: scale(0.7) translateY(60px) rotate(-3deg); }
-          100% { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(6deg); }
-          50% { transform: translateY(-15px) rotate(12deg); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseSlow {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.1); }
-        }
-        .animate-welcome-pop {
-          animation: welcomePop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
-        .stagger-1, .stagger-2, .stagger-3 {
-          opacity: 0;
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .stagger-1 { animation-delay: 0.4s; }
-        .stagger-2 { animation-delay: 0.6s; }
-        .stagger-3 { animation-delay: 0.8s; }
-
-        .animate-pulse-slow {
-          animation: pulseSlow 5s ease-in-out infinite;
-        }
-      `}} />
     </div>
   );
 };

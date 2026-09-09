@@ -1,11 +1,9 @@
 import axios from "axios";
 
-// Centralized API configuration using Axios
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "http://localhost:3000/api" 
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "http://localhost:3000/api"
 });
 
-// Request Interceptor: Injects Bearer token automatically if it exists in local storage
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -13,5 +11,20 @@ API.interceptors.request.use((req) => {
   }
   return req;
 });
+
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      const publicPaths = ["/", "/register", "/forgot-password", "/verify-otp", "/reset-password"];
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default API;

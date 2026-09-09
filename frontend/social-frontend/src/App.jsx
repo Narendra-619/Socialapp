@@ -1,34 +1,60 @@
 import { useEffect, useContext } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 import PostPage from "./pages/PostPage";
 import Messenger from "./pages/Messenger";
+import SavedPosts from "./pages/SavedPosts";
+import FollowersList from "./pages/FollowersList";
+import FollowingList from "./pages/FollowingList";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyOTP from "./pages/VerifyOTP";
+import ResetPassword from "./pages/ResetPassword";
+import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
+import ScheduledPosts from "./pages/ScheduledPosts";
+import DraftsPage from "./pages/DraftsPage";
 import Navbar from "./components/Navbar";
+import LeftSidebar from "./components/LeftSidebar";
+import BottomNav from "./components/BottomNav";
 import WelcomeModal from "./components/WelcomeModal";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
+import ErrorBoundary from "./components/ErrorBoundary";
+
+function PageWrapper({ children }) {
+  return (
+    <div className="fade-in">
+      {children}
+    </div>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
     </BrowserRouter>
   );
 }
 
 function AppContent() {
   const { theme } = useContext(ThemeContext);
-  const { showWelcome, closeWelcome, user } = useContext(AuthContext);
+  const { showWelcome, closeWelcome, user, token } = useContext(AuthContext);
+  const isAuthenticated = !!user && !!token;
 
-  // Apply dark class to html tag for consistent background and overscroll behavior
   useEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
@@ -40,19 +66,37 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors duration-200">
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-        <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/post/:postId" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
-        <Route path="/messenger" element={<ProtectedRoute><Messenger /></ProtectedRoute>} />
-      </Routes>
+      <div className="flex">
+        {isAuthenticated && <LeftSidebar />}
+        <main className={`flex-1 min-w-0 ${isAuthenticated ? "lg:ml-[240px] pb-20 lg:pb-0" : ""}`}>
+          <PageWrapper>
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/verify-otp" element={<VerifyOTP />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/scheduled" element={<ProtectedRoute><ScheduledPosts /></ProtectedRoute>} />
+              <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
+              <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile/:userId/followers" element={<ProtectedRoute><FollowersList /></ProtectedRoute>} />
+              <Route path="/profile/:userId/following" element={<ProtectedRoute><FollowingList /></ProtectedRoute>} />
+              <Route path="/post/:postId" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
+              <Route path="/messenger" element={<ProtectedRoute><Messenger /></ProtectedRoute>} />
+              <Route path="/saved" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </PageWrapper>
+        </main>
+      </div>
+      {isAuthenticated && <BottomNav />}
 
-      <WelcomeModal 
-        isOpen={showWelcome} 
-        onClose={closeWelcome} 
-        username={user?.username} 
+      <WelcomeModal
+        isOpen={showWelcome}
+        onClose={closeWelcome}
+        username={user?.username}
       />
     </div>
   );

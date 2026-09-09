@@ -16,11 +16,15 @@
   body {
     @apply font-['Inter',_sans-serif] antialiased bg-transparent text-zinc-900 dark:text-zinc-100;
   }
+
+  * {
+    @apply selection:bg-blue-500/20 selection:text-blue-900 dark:selection:text-blue-100;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-blue-600/20;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   
   .input-field {
@@ -32,7 +36,28 @@
   }
 }
 
-/* Hide Scrollbar */
+/* Scrollbar - thin subtle track for scrollable areas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-zinc-300 dark:bg-zinc-700 rounded-full;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-400 dark:bg-zinc-600;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.zinc.300') transparent;
+}
+.dark .custom-scrollbar {
+  scrollbar-color: theme('colors.zinc.700') transparent;
+}
+
+/* Hide default scrollbar globally */
 ::-webkit-scrollbar {
   display: none;
 }
@@ -41,26 +66,263 @@
   scrollbar-width: none;
 }
 
-/* Custom Animations */
+/* Safe area bottom padding for iOS notch/gesture bar */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ========================
+   ANIMATIONS
+   ======================== */
+
+/* Fade in with upward slide */
 .fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Fade in variant (for CreatePost, WelcomeModal) */
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Fade out (for exits) */
+.animate-fade-out {
+  animation: fadeOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* Shake for errors */
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-3px); }
+  40%, 60% { transform: translateX(3px); }
+}
+
+/* Bounce once (like, save) */
 .animate-bounce-once {
-  animation: bounceOnce 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bounceOnce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes bounceOnce {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.25); }
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  @apply relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 rounded-xl;
+}
+.skeleton::after {
+  content: '';
+  @apply absolute inset-0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+.dark .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+/* Modal pop */
+.animate-modal-pop {
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Modal exit */
+.animate-modal-exit {
+  animation: modalExit 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes modalExit {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.95) translateY(10px); }
+}
+
+/* Toast slide in */
+.toast-enter {
+  animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100%) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.toast-exit {
+  animation: toastOut 0.25s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(100%) scale(0.95); }
+}
+
+/* Pulse for notification badge */
+.animate-pulse-badge {
+  animation: pulseBadge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Floating animation for logos */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Slide up for page content */
+.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Glassmorphism utility */
 .glass {
-  @apply backdrop-blur-md bg-white/80 dark:bg-zinc-900/80 border-zinc-200/50 dark:border-zinc-800/50;
+  @apply backdrop-blur-xl bg-white/70 dark:bg-zinc-900/70 border border-white/20 dark:border-zinc-800/50;
+}
+
+/* ========================
+   WELCOME MODAL ANIMATIONS
+   ======================== */
+
+.animate-welcome-pop {
+  animation: welcomePop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes welcomePop {
+  0% { opacity: 0; transform: scale(0.7) translateY(60px) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 5s ease-in-out infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Staggered entrance for welcome modal children */
+.stagger-1, .stagger-2, .stagger-3 {
+  opacity: 0;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger-1 { animation-delay: 0.4s; }
+.stagger-2 { animation-delay: 0.6s; }
+.stagger-3 { animation-delay: 0.8s; }
+
+/* ========================
+   BUTTON INTERACTIONS
+   ======================== */
+
+/* Instant press feedback on pointer-down */
+.btn-press {
+  transition: transform 80ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ========================
+   ACCESSIBILITY
+   ======================== */
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .fade-in,
+  .animate-fade-in,
+  .slide-up,
+  .animate-modal-pop {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ========================
+   SCROLLBAR FOR SPECIFIC AREAS
+   ======================== */
+
+/* Show thin scrollbar on hover for chat/message areas */
+.chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  @apply bg-zinc-300 dark:bg-zinc-700 rounded-full;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.chat-scroll:hover::-webkit-scrollbar-thumb {
+  opacity: 1;
+}
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.chat-scroll:hover {
+  scrollbar-color: theme('colors.zinc.300') transparent;
+}
+.dark .chat-scroll:hover {
+  scrollbar-color: theme('colors.zinc.700') transparent;
 }

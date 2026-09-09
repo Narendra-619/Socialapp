@@ -1,18 +1,32 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const getTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    return null;
+  }
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
+  });
+};
 
-transporter.verify().then(() => {
-  console.log("Email transporter verified");
-}).catch((err) => {
-  console.error("Email transporter verification failed:", err.message);
-});
+const transporter = getTransporter();
+
+if (transporter) {
+  transporter.verify().then(() => {
+    console.log("Email transporter verified");
+  }).catch((err) => {
+    console.error("Email transporter verification failed:", err.message);
+  });
+} else {
+  console.warn("[WARN] EMAIL_USER or EMAIL_PASS not configured in environment.");
+}
 
 const baseTemplate = (title, subtitle, content) => `
 <!DOCTYPE html>
@@ -45,6 +59,10 @@ const otpBlock = (otp) => `
 `;
 
 export const sendOTPEmail = async (email, otp) => {
+  if (!transporter) {
+    throw new Error("Email service is not configured. Please set EMAIL_USER and EMAIL_PASS environment variables.");
+  }
+
   const content = `
     <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 24px;">We received a request to reset your password. Use the code below to proceed:</p>
     ${otpBlock(otp)}
@@ -61,6 +79,10 @@ export const sendOTPEmail = async (email, otp) => {
 };
 
 export const sendVerificationEmail = async (email, otp) => {
+  if (!transporter) {
+    throw new Error("Email service is not configured. Please set EMAIL_USER and EMAIL_PASS environment variables.");
+  }
+
   const content = `
     <p style="color:#3f3f46;font-size:15px;line-height:1.6;margin:0 0 24px;">Thanks for signing up! Verify your email address using the code below:</p>
     ${otpBlock(otp)}

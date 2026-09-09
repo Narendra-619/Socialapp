@@ -18,7 +18,7 @@ export const registerLimiter = rateLimit({
 
 export const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3,
+  max: 10,
   message: { error: "Too many OTP attempts, please try again after 15 minutes" },
   standardHeaders: true,
   legacyHeaders: false

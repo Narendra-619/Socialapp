@@ -34,7 +34,14 @@ export const requestReset = async (req, res) => {
       purpose: "password-reset"
     });
 
-    await sendOTPEmail(user.email, otp);
+    try {
+      await sendOTPEmail(user.email, otp);
+    } catch (mailErr) {
+      console.error("Failed to send OTP email:", mailErr.message);
+      return res.status(500).json({
+        error: "Failed to send reset code email. Please ensure EMAIL_USER and EMAIL_PASS are set in backend environment variables."
+      });
+    }
 
     res.status(200).json({ message: "If an account exists with this email, you will receive a reset code." });
   } catch (error) {

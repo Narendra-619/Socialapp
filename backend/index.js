@@ -31,13 +31,24 @@ app.set("trust proxy", 1);
 // Security headers
 app.use(helmet());
 
+// CORS allowed origins: supports CLIENT_URL from env, production Vercel frontend, and local dev
+const clientUrls = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map(url => url.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+const allowedOrigins = [
+  ...new Set([
+    "https://socialapp-kura.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    ...clientUrls
+  ])
+];
+
 // Middleware configuration
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL,
-    "http://localhost:5173",
-    "http://localhost:5174"
-  ].filter(Boolean),
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -70,11 +81,7 @@ app.use(errorHandler);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "http://localhost:5174"
-    ].filter(Boolean),
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   }

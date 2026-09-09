@@ -20,6 +20,6 @@ const draftSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-draftSchema.index({ userId: 1 });
+draftSchema.index({ userId: 1, updatedAt: -1 });
 
 export default mongoose.model("Draft", draftSchema);

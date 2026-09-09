@@ -59,7 +59,8 @@ export default function Messenger() {
   }, [currentChat]);
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    const rawSocketUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    const socketUrl = rawSocketUrl.replace(/\/+$/, "");
     const token = localStorage.getItem("token");
     socket.current = io(socketUrl, {
       auth: { token }

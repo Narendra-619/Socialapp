@@ -66,17 +66,18 @@ export const createPost = async (req, res) => {
 
     // Only send mention notifications immediately for published posts
     // Scheduled posts will send notifications when published by the scheduler
-    if (!isScheduled) {
-      for (const mentioned of mentionedUsers) {
-        if (mentioned._id.toString() !== req.user._id.toString()) {
-          await Notification.create({
-            recipient: mentioned._id,
-            sender: req.user._id,
-            type: "mention",
-            post: post._id,
-            message: `${req.user.username} mentioned you in a post`
-          });
-        }
+    if (!isScheduled && mentionedUsers.length > 0) {
+      const mentionNotifications = mentionedUsers
+        .filter(m => m._id.toString() !== req.user._id.toString())
+        .map(m => ({
+          recipient: m._id,
+          sender: req.user._id,
+          type: "mention",
+          post: post._id,
+          message: `${req.user.username} mentioned you in a post`
+        }));
+      if (mentionNotifications.length > 0) {
+        await Notification.insertMany(mentionNotifications);
       }
     }
 
@@ -391,16 +392,17 @@ export const addComment = async (req, res) => {
     const mentionUsernames = [...new Set((sanitizedText.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
     if (mentionUsernames.length > 0) {
       const mentionedUsers = await User.find({ username: { $in: mentionUsernames } }).select("_id username");
-      for (const mentioned of mentionedUsers) {
-        if (mentioned._id.toString() !== req.user._id.toString()) {
-          await Notification.create({
-            recipient: mentioned._id,
-            sender: req.user._id,
-            type: "mention",
-            post: post._id,
-            message: `${req.user.username} mentioned you in a comment`
-          });
-        }
+      const mentionNotifications = mentionedUsers
+        .filter(m => m._id.toString() !== req.user._id.toString())
+        .map(m => ({
+          recipient: m._id,
+          sender: req.user._id,
+          type: "mention",
+          post: post._id,
+          message: `${req.user.username} mentioned you in a comment`
+        }));
+      if (mentionNotifications.length > 0) {
+        await Notification.insertMany(mentionNotifications);
       }
     }
 
@@ -647,45 +649,82 @@ export const getPostAnalytics = async (req, res) => {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ error: "Post not found" });
-
-    // Get daily breakdown from comments and likes timestamps
-    const dailyData = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const dayStart = new Date(startDate);
-      dayStart.setDate(dayStart.getDate() + (days - 1 - i));
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-
-      const dayLikes = (post.likes || []).length;
-
-      const dayComments = (post.comments || []).filter(c => {
-        if (!c.createdAt) return false;
-        const commentDate = new Date(c.createdAt);
-        return commentDate >= dayStart && commentDate < dayEnd;
-      }).length;
-
-      dailyData.push({
-        date: dayStart.toISOString().split("T")[0],
-        views: Math.round((post.views || 0) / days), // Approximate daily views
-        likes: i === 0 ? (post.likes?.length || 0) : 0,
-        comments: dayComments
-      });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid post ID" });
     }
+    const postObjectId = new mongoose.Types.ObjectId(req.params.id);
 
-    const totalViews = post.views || 0;
-    const totalLikes = post.likes?.length || 0;
-    const totalComments = post.comments?.length || 0;
-
-    // Calculate change from previous period
     const prevStart = new Date(startDate);
     prevStart.setDate(prevStart.getDate() - days);
-    const prevComments = (post.comments || []).filter(c => {
-      if (!c.createdAt) return false;
-      const d = new Date(c.createdAt);
-      return d >= prevStart && d < startDate;
-    }).length;
+
+    const [postAnalytics] = await Post.aggregate([
+      { $match: { _id: postObjectId } },
+      {
+        $facet: {
+          metrics: [
+            {
+              $project: {
+                totalViews: { $ifNull: ["$views", 0] },
+                totalLikes: { $size: { $ifNull: ["$likes", []] } },
+                totalComments: { $size: { $ifNull: ["$comments", []] } }
+              }
+            }
+          ],
+          dailyComments: [
+            { $unwind: "$comments" },
+            {
+              $match: {
+                "comments.createdAt": { $gte: startDate }
+              }
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$comments.createdAt" }
+                },
+                comments: { $sum: 1 }
+              }
+            }
+          ],
+          prevComments: [
+            { $unwind: "$comments" },
+            {
+              $match: {
+                "comments.createdAt": { $gte: prevStart, $lt: startDate }
+              }
+            },
+            {
+              $count: "total"
+            }
+          ]
+        }
+      }
+    ]);
+
+    const metrics = postAnalytics?.metrics?.[0];
+    if (!metrics) return res.status(404).json({ error: "Post not found" });
+
+    const dailyCommentsMap = new Map(
+      (postAnalytics?.dailyComments || []).map(item => [item._id, item.comments])
+    );
+    const prevCommentsCount = postAnalytics?.prevComments?.[0]?.total || 0;
+
+    const totalViews = metrics.totalViews || 0;
+    const totalLikes = metrics.totalLikes || 0;
+    const totalComments = metrics.totalComments || 0;
+
+    const approxDailyViews = Math.round(totalViews / days);
+    const dailyData = Array.from({ length: days }, (_, idx) => {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(dayDate.getDate() + idx);
+      const dateKey = dayDate.toISOString().split("T")[0];
+      return {
+        date: dateKey,
+        views: approxDailyViews,
+        likes: idx === days - 1 ? totalLikes : 0,
+        comments: dailyCommentsMap.get(dateKey) || 0
+      };
+    });
 
     res.status(200).json({
       total: { views: totalViews, likes: totalLikes, comments: totalComments },
@@ -693,7 +732,7 @@ export const getPostAnalytics = async (req, res) => {
       change: {
         views: 0,
         likes: 0,
-        comments: prevComments > 0 ? Math.round(((totalComments - prevComments) / prevComments) * 100) : (totalComments > 0 ? 100 : 0)
+        comments: prevCommentsCount > 0 ? Math.round(((totalComments - prevCommentsCount) / prevCommentsCount) * 100) : (totalComments > 0 ? 100 : 0)
       }
     });
   } catch (error) {
@@ -704,89 +743,163 @@ export const getPostAnalytics = async (req, res) => {
 
 /**
  * Get aggregated analytics for all of a user's posts
+ * Replaces in-memory loading of all posts and nested loops with high-performance MongoDB aggregation
  */
 export const getUserAnalytics = async (req, res) => {
   try {
-    const userId = req.params.userId || req.user._id;
+    const rawUserId = req.params.userId || req.user._id;
+    if (!mongoose.Types.ObjectId.isValid(rawUserId)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+    const userObjectId = new mongoose.Types.ObjectId(rawUserId);
+
     const { period = "30d" } = req.query;
     const days = period === "30d" ? 30 : 7;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
 
-    // H8: Project only needed fields + limit to prevent loading ALL posts into memory
-    const posts = await Post.find({ userId })
-      .select("views likes comments text image video createdAt")
-      .limit(500);
-
-    let totalViews = 0;
-    let totalLikes = 0;
-    let totalComments = 0;
-    let tweetsCount = 0;
-    let photosCount = 0;
-    let videosCount = 0;
-
-    const dailyMap = {};
-
-    for (const post of posts) {
-      totalViews += post.views || 0;
-      totalLikes += post.likes?.length || 0;
-      totalComments += post.comments?.length || 0;
-
-      if (post.video) {
-        videosCount++;
-      } else if (post.image) {
-        photosCount++;
-      } else {
-        tweetsCount++;
+    const [analyticsResult] = await Post.aggregate([
+      { $match: { userId: userObjectId } },
+      {
+        $facet: {
+          totals: [
+            {
+              $group: {
+                _id: null,
+                totalPosts: { $sum: 1 },
+                totalViews: { $sum: { $ifNull: ["$views", 0] } },
+                totalLikes: { $sum: { $size: { $ifNull: ["$likes", []] } } },
+                totalComments: { $sum: { $size: { $ifNull: ["$comments", []] } } },
+                videosCount: {
+                  $sum: {
+                    $cond: [
+                      { $and: [{ $ne: ["$video", ""] }, { $ne: ["$video", null] }] },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                photosCount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $ne: ["$image", ""] },
+                          { $ne: ["$image", null] },
+                          { $or: [{ $eq: ["$video", ""] }, { $eq: ["$video", null] }] }
+                        ]
+                      },
+                      1,
+                      0
+                    ]
+                  }
+                },
+                tweetsCount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $or: [{ $eq: ["$image", ""] }, { $eq: ["$image", null] }] },
+                          { $or: [{ $eq: ["$video", ""] }, { $eq: ["$video", null] }] }
+                        ]
+                      },
+                      1,
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          topPosts: [
+            {
+              $addFields: {
+                likesCount: { $size: { $ifNull: ["$likes", []] } },
+                commentsCount: { $size: { $ifNull: ["$comments", []] } },
+                engagement: {
+                  $add: [
+                    { $size: { $ifNull: ["$likes", []] } },
+                    { $size: { $ifNull: ["$comments", []] } }
+                  ]
+                }
+              }
+            },
+            { $sort: { engagement: -1, createdAt: -1 } },
+            { $limit: 10 },
+            {
+              $project: {
+                _id: 1,
+                text: { $substrCP: [{ $ifNull: ["$text", ""] }, 0, 80] },
+                image: 1,
+                video: 1,
+                views: { $ifNull: ["$views", 0] },
+                likes: "$likesCount",
+                comments: "$commentsCount",
+                createdAt: 1
+              }
+            }
+          ],
+          dailyComments: [
+            { $unwind: "$comments" },
+            {
+              $match: {
+                "comments.createdAt": { $gte: startDate }
+              }
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$comments.createdAt" }
+                },
+                comments: { $sum: 1 }
+              }
+            }
+          ]
+        }
       }
+    ]);
 
-      // Aggregate daily comments
-      for (const comment of post.comments || []) {
-        if (!comment.createdAt || isNaN(new Date(comment.createdAt).getTime())) continue;
-        const day = new Date(comment.createdAt).toISOString().split("T")[0];
-        if (!dailyMap[day]) dailyMap[day] = { views: 0, likes: 0, comments: 0 };
-        dailyMap[day].comments += 1;
-      }
-    }
+    const totals = analyticsResult?.totals?.[0] || {
+      totalPosts: 0,
+      totalViews: 0,
+      totalLikes: 0,
+      totalComments: 0,
+      videosCount: 0,
+      photosCount: 0,
+      tweetsCount: 0
+    };
 
-    // Fill in missing days
-    const daily = [];
-    for (let i = days - 1; i >= 0; i--) {
+    const dailyCommentsMap = new Map(
+      (analyticsResult?.dailyComments || []).map(item => [item._id, item.comments])
+    );
+
+    const avgViewsPerDay = Math.round((totals.totalViews || 0) / days);
+    const avgLikesPerDay = Math.round((totals.totalLikes || 0) / days);
+
+    const daily = Array.from({ length: days }, (_, idx) => {
       const d = new Date();
-      d.setDate(d.getDate() - i);
+      d.setDate(d.getDate() - (days - 1 - idx));
       const key = d.toISOString().split("T")[0];
-      daily.push({
+      return {
         date: key,
-        views: dailyMap[key]?.views || Math.round(totalViews / days),
-        likes: dailyMap[key]?.likes || Math.round(totalLikes / days),
-        comments: dailyMap[key]?.comments || 0
-      });
-    }
+        views: avgViewsPerDay,
+        likes: avgLikesPerDay,
+        comments: dailyCommentsMap.get(key) || 0
+      };
+    });
 
-    // Recent posts with stats
-    const topPosts = posts
-      .sort((a, b) => ((b.likes?.length || 0) + (b.comments?.length || 0)) - ((a.likes?.length || 0) + (a.comments?.length || 0)))
-      .slice(0, 10)
-      .map(p => ({
-        _id: p._id,
-        text: p.text?.slice(0, 80),
-        image: p.image,
-        video: p.video,
-        views: p.views || 0,
-        likes: p.likes?.length || 0,
-        comments: p.comments?.length || 0,
-        createdAt: p.createdAt
-      }));
+    const topPosts = analyticsResult?.topPosts || [];
 
     res.status(200).json({
       total: {
-        views: totalViews,
-        likes: totalLikes,
-        comments: totalComments,
-        posts: posts.length,
-        tweets: tweetsCount,
-        photos: photosCount,
-        videos: videosCount
+        views: totals.totalViews || 0,
+        likes: totals.totalLikes || 0,
+        comments: totals.totalComments || 0,
+        posts: totals.totalPosts || 0,
+        tweets: totals.tweetsCount || 0,
+        photos: totals.photosCount || 0,
+        videos: totals.videosCount || 0
       },
       daily,
       topPosts,

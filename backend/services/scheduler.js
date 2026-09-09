@@ -19,16 +19,18 @@ const publishPost = async (post) => {
         await Post.findByIdAndDelete(post._id);
         return;
       }
-      for (const mentionedId of post.mentions) {
-        if (mentionedId.toString() !== post.userId.toString()) {
-          await Notification.create({
-            recipient: mentionedId,
-            sender: post.userId,
-            type: "mention",
-            post: post._id,
-            message: `${author.username} mentioned you in a post`
-          });
-        }
+      const notifications = post.mentions
+        .filter(mId => mId.toString() !== post.userId.toString())
+        .map(mentionedId => ({
+          recipient: mentionedId,
+          sender: post.userId,
+          type: "mention",
+          post: post._id,
+          message: `${author.username} mentioned you in a post`
+        }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
       }
     }
 
@@ -49,10 +51,8 @@ export const catchUpOverduePosts = async () => {
     });
 
     if (overdue.length > 0) {
-      console.log(`[Scheduler] Catching up ${overdue.length} overdue scheduled posts`);
-      for (const post of overdue) {
-        await publishPost(post);
-      }
+      console.log(`[Scheduler] Catching up ${overdue.length} overdue scheduled posts concurrently`);
+      await Promise.allSettled(overdue.map(post => publishPost(post)));
     }
   } catch (error) {
     console.error("[Scheduler] Catch-up error:", error);
@@ -72,8 +72,8 @@ export const startScheduler = () => {
         scheduledAt: { $lte: now }
       });
 
-      for (const post of duePosts) {
-        await publishPost(post);
+      if (duePosts.length > 0) {
+        await Promise.allSettled(duePosts.map(post => publishPost(post)));
       }
     } catch (error) {
       console.error("[Scheduler] Cron error:", error);

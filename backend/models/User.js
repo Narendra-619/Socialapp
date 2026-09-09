@@ -73,4 +73,6 @@ userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
+userSchema.index({ isPrivate: 1 });
+
 export default mongoose.model("User", userSchema);
